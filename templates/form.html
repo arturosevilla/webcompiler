@@ -1,0 +1,175 @@
+<!DOCTYPE>
+<html>
+    <head>
+        <title>Compiler Test Page</title>
+        <style type="text/css">
+            .codeLabels label {
+                width: 335px;
+                display: inline-block;
+                margin: 0 auto;
+            }
+
+            .codeBoxes textarea {
+                width: 335px;
+                margin: 0 auto;
+            }
+
+        </style>
+        <script type="text/javascript" src="/static/irlexer.js">
+        </script>
+        <script type="text/javascript" src="/static/irparser.js">
+        </script>
+        <script type="text/javascript">
+            function getXHR() {
+            }
+
+            var samples = [
+                {
+                    env: {
+                        'a': {type: 'int', temp: false},
+                        'b': {type: 'int', temp: false},
+                        'c': {type: 'int', temp: false}
+                    },
+                    code: [
+                        'a = b + c',
+                        'if a > 3 goto L0',
+                        'goto L1',
+                        'L0:',
+                        'a = a + 1',
+                        'goto L2',
+                        'L1:',
+                        'a = a + 2',
+                        'L2:'
+                    ]
+                }
+            ];
+
+
+            function getEnvironment() {
+                var env = {};
+                var varDefs = document.querySelectorAll('.var-definition');
+                for (var i = 0; i < varDefs.length; i++) {
+                    var varDefElem = varDefs[i];
+                    var varName = varDefElem.querySelector('.name').value;
+                    var temp = varDefElem.querySelector('.temp').checked;
+                    env[varName] = {type: 'int', temp: temp};
+                };
+                return env;
+            }
+
+            function compile() {
+                var codeArea = document.querySelector('#irCode');
+                var errorLabel = document.querySelector('#error');
+                // an extra new line is appended to simplify the parser
+                var code = codeArea.value.split('\n').filter(function(elem) {
+                    var line = elem.trim();
+                    return line.length > 0 && line[0] !== '#';
+                }).join('\n') + '\n';
+                var env = getEnvironment();
+                window.IRLexer.reset(code);
+                var qtable;
+                try {
+                    qtable = window.IRParser.parse(env);
+                } catch (error) {
+                    errorLabel.innerText = error.message;
+                    return;
+                }
+                var xhr = new XMLHttpRequest();
+                errorLabel.innerText = '';
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status >= 400) {
+                            errorLabel.innerText = 'Favor de introducir codigo';
+                        } else if (xhr.status == 200) {
+                            var assemblyCode = JSON.parse(xhr.responseText);
+                            if (assemblyCode.lines === undefined || assemblyCode.lines.length === 0) {
+                                errorLabel.innerText = 'Error desconocido: no hay codigo generado';
+                                return;
+                            }
+                            document.querySelector('#irAssembly').value = assemblyCode.lines.join('\n');
+                        }
+                    }
+                };
+                xhr.open('POST', '/compile', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                var irEncoded = JSON.stringify({code: qtable, env: env});
+                document.querySelector('#generatedJson').value = irEncoded;
+                xhr.send(irEncoded);
+            }
+
+            function addVariableForm() {
+                var element = document.createElement('div');
+                element.setAttribute('class', 'var-definition');
+                var label = document.createElement('label');
+                label.innerText = 'Nombre: ';
+                element.appendChild(label);
+                var varBox = document.createElement('input');
+                varBox.setAttribute('type', 'textbox');
+                varBox.setAttribute('class', 'name');
+                element.appendChild(varBox);
+                label = document.createElement('label');
+                label.innerText = 'Temporal?';
+                element.appendChild(label);
+                var tempBox = document.createElement('input');
+                tempBox.setAttribute('type', 'checkbox');
+                tempBox.setAttribute('class', 'temp');
+                element.appendChild(tempBox);
+                return element;
+            }
+
+            function addVariable() {
+                var envArea = document.querySelector('#environment');
+                var formDiv = addVariableForm();
+                envArea.appendChild(formDiv);
+                return formDiv;
+            }
+
+            window.document.addEventListener('DOMContentLoaded', function() {
+                var codeArea = document.querySelector('#irCode');
+                var sampleSelected = samples[Math.floor(Math.random() * samples.length)];
+                codeArea.value = sampleSelected.code.join('\n'); 
+                document.querySelector('#compile').addEventListener('click', compile);
+                document.querySelector('#moreVariables').addEventListener('click', function(evt) {
+                    evt.stopPropagation();
+                    addVariable();
+                });
+                for (var varName in sampleSelected.env) {
+                    if (!sampleSelected.env.hasOwnProperty(varName)) {
+                        continue;
+                    }
+                    var prop = sampleSelected.env[varName];
+                    var varElement = addVariable();
+                    varElement.querySelector('.name').value = varName;
+                    varElement.querySelector('.temp').checked = prop.temp;
+
+                };
+
+            });
+        </script>
+    </head>
+    <body>
+        <h1>Test compilador</h1>
+        <form action="/compile" method="post">
+            <div class="codeLabels">
+                <label for="irCode">C&oacute;digo intermedio:</label>
+                <label for="irAssembly">C&oacute;digo ensamblador:</label>
+                <label for="generatedJson">JSON generado:</label>
+            </div>
+            <div class="codeBoxes">
+                <textarea name="irCode" id="irCode" cols="40" rows="20"></textarea>
+                <textarea name="irAssembly" id="irAssembly" cols="40" rows="20"></textarea>
+                <textarea name="generatedJson" id="generatedJson" cols="40" rows="20"></textarea>
+            </div>
+            <h3>Ambiente</h3>
+            <div id="envBox">
+                <div id="environment">
+                </div>
+                <a id="moreVariables" href="#">M&aacute;s variables</a>
+            </div>
+            <input type="button" id="compile" name="compile" value="Compilar" />
+            <br />
+            <label id='error'></label>
+        </form>
+            
+    </body>
+</html>
