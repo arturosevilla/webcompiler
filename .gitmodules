@@ -1,0 +1,3 @@
+[submodule "python_compiler"]
+	path = python_compiler
+	url = git@github.com:arturosevilla/complete-parser.git

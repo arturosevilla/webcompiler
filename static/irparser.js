@@ -80,7 +80,7 @@
         var token = match(['NUMBER', 'ID'], false);
         if (token.type === 'ID') {
             var varEntry = env[token.lexeme];
-            if (varEntry === null) {
+            if (varEntry === undefined) {
                 throw new UndefinedVariable(token.lexeme);
             }
             return token.lexeme;
