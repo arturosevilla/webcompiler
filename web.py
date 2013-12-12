@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from flask import Flask, render_template as render, jsonify, request, abort
 from python_compiler.compiler.ir import QTable, Quadruple, Environment
-#from python_compiler.compiler.x86 import CodeGenerator
+from python_compiler.compiler.x86 import CodeGenerator
 
 app = Flask(__name__)
 
@@ -28,9 +28,8 @@ def compile():
     env = Environment()
     for env_name, info in serialized_environment.iteritems():
         env.put(env_name, info)
-    print env.env
-    print [block for block in qtable.get_basic_blocks()]
-    return jsonify({'lines': ['hello', 'world']})
+    generator = CodeGenerator(qtable, env)
+    return jsonify({'lines': generator.generate()})
 
 
 if __name__ == '__main__':
