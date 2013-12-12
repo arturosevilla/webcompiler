@@ -28,10 +28,12 @@
                     env: {
                         'a': {type: 'int', temp: false},
                         'b': {type: 'int', temp: false},
-                        'c': {type: 'int', temp: false}
+                        'c': {type: 'int', temp: false},
+                        't1': {type: 'int', temp: true}
                     },
                     code: [
-                        'a = b + c',
+                        't1 = b + 1',
+                        'a = t1 - c',
                         'if a > 3 goto L0',
                         'goto L1',
                         'L0:',
