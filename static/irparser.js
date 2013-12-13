@@ -20,14 +20,25 @@
     }
 
     function match(types, allowNull) {
-        var token = window.IRLexer.getNextToken();
+        var token = window._savedToken;
+        if (token === undefined || token === null) {
+            token = window.IRLexer.getNextToken();
+        } else {
+            window._savedToken = null;
+        }
         if (token === null && allowNull) {
             return null;
         } else if (token === null) {
             throw new IRSyntaxError('Unexpected end of input');
         }
         if (types.indexOf(token.type) === -1) {
-            throw new IRSyntaxError('Unexpected token: ' + token.lexeme);
+            if (allowNull) {
+                window._savedToken = token;
+                return null;
+            }
+            throw new IRSyntaxError(
+                'Expected ' + types.join(', ') + '. Got: ' + token.type
+            );
         }
         return token;
     }
@@ -91,7 +102,7 @@
     function assignStmt(qtable, env, id) {
         var term1 = term(env);
         var token = match(['OP'], true);
-        if (token == null) {
+        if (token === null || token.type === 'EOL') {
             gen(qtable, '=', term1, null, id);
             return;
         }
@@ -164,6 +175,7 @@
 
     window.IRParser = {
         reset: function(code) {
+            window._savedToken = null;
             window.IRLexer.reset(code);
         },
         parse: function(env) {

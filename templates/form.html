@@ -71,7 +71,7 @@
                     return line.length > 0 && line[0] !== '#';
                 }).join('\n') + '\n';
                 var env = getEnvironment();
-                window.IRLexer.reset(code);
+                window.IRParser.reset(code);
                 var qtable;
                 try {
                     qtable = window.IRParser.parse(env);
